@@ -1,0 +1,81 @@
+service: serverless-aws-nodejs-dynamodb
+provider:
+  name: aws 
+  runtime: nodejs18.x
+  stage: dev
+  region: ap-northeast-2
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+      Resource:
+        - { "Fn::GetAtt": ["CongestionDynamoDBTable", "Arn" ] }
+        - { "Fn::GetAtt": ["SubwayDynamoDBTable", "Arn" ] }
+        - { "Fn::GetAtt": ["EventDynamoDBTable", "Arn" ] }
+  environment:
+    CONGESTION_TABLE: 'congestion-table'
+    SUBWAY_TABLE: 'subway-table'
+    EVENT_TABLE: 'event-table'
+    EVENT_API_KEY: ${env:EVENT_API_KEY}
+    TMAP_API_KEY: ${env:TMAP_API_KEY}
+functions:
+  app:
+    handler: app.server
+    events:
+      - http:
+          path: /
+          method: ANY
+          cors: false
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: false
+resources:
+  Resources:
+    CongestionDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: poiId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: poiId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: 'congestion-table'
+    SubwayDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: stationCode
+            AttributeType: S
+        KeySchema:
+          - AttributeName: stationCode
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: 'subway-table'
+    EventDynamoDBTable:
+      Type: 'AWS::DynamoDB::Table'
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: eventNm
+            AttributeType: S
+        KeySchema:
+          - AttributeName: eventNm
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: 'event-table'
+ 
+plugins:
+  - serverless-offline
